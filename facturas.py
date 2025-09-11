@@ -12,7 +12,7 @@ from reportlab.lib import colors
 # CONFIGURAÇÕES DO SUPABASE
 # ==========================
 SUPABASE_URL = "https://qdjcokczpvfkqbpaezhn.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVudnZybm92dWN5bHpueHp1dWlwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTE1OTYzNiwiZXhwIjoyMDY0NzM1NjM2fQ.hVOh3UPOsljh-NWuhnOY1Z8eoLRXV5ws1_aA_w_RCqk"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkamNva2N6cHZma3FicGFlemhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MDg2NDIsImV4cCI6MjA3MzE4NDY0Mn0.HC2M4bEfhT4xa7CIvc27Us8rHMp1T3k634gR7GBQuMg"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ==========================
