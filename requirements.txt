@@ -1,1 +1,16 @@
+# Interface Web
+streamlit>=1.38.0
+
+# Supabase
 supabase
+gotrue
+httpx
+
+# PDFs e Documentos
+reportlab
+pillow
+python-docx
+openpyxl
+
+# Manipulação de dados
+pandas
