@@ -127,7 +127,7 @@ def gerar_pdf_cotacao(empresa, itens):
 # ==========================
 # INTERFACE STREAMLIT
 # ==========================
-st.title("📑 Geração de PDF - Cotação de Exames")
+st.title("Fortaleza Digital")
 
 # Login
 if "user" not in st.session_state:
@@ -165,3 +165,4 @@ else:
         )
     else:
         st.warning("Nenhum item encontrado na tabela `itens`.")
+
