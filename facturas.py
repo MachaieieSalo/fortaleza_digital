@@ -12,7 +12,7 @@ from reportlab.lib import colors
 # CONFIGURAÇÕES DO SUPABASE
 # ==========================
 SUPABASE_URL = "https://qdjcokczpvfkqbpaezhn.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVudnZybm92dWN5bHpueHp1dWlwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTE1OTYzNiwiZXhwIjoyMDY0NzM1NjM2fQ.hVOh3UPOsljh-NWuhnOY1Z8eoLRXV5ws1_aA_w_RCqk"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVudnZybm92dWN5bHpueHp1dWlwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTE1OTYzNiwiZXhwIjoyMDY0NzM1NjM2fQ.hVOh3UPOsljh-NWuhnOY1Z8eoLRXV5ws1_aA_w_RCqk""
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ==========================
@@ -63,6 +63,7 @@ def salvar_cotacao_supabase(empresa, itens, total):
             "user_id": st.session_state["user"].id if "user" in st.session_state else None
         }
         supabase.table("cotacoes").insert(data).execute()
+        st.success("Cotação salva com sucesso no Supabase!")
     except Exception as e:
         logging.error(f"Erro ao salvar cotação no Supabase: {e}")
         st.error("Erro ao salvar cotação na base de dados.")
@@ -191,7 +192,6 @@ def pagina_cotacoes():
 
     # Botão gerar PDF e salvar no Supabase
     if st.button("Gerar PDF e Salvar Cotação"):
-        # Validação
         campos = [st.session_state.nome_empresa, st.session_state.nuit_empresa,
                   st.session_state.endereco_empresa, st.session_state.email_empresa]
         if any(campo.strip()=="" for campo in campos):
@@ -209,11 +209,8 @@ def pagina_cotacoes():
         }
 
         pdf_bytes, total = gerar_pdf_cotacao(empresa_dados, st.session_state.itens_cotacao)
-
-        # Salvar no Supabase
         salvar_cotacao_supabase(empresa_dados, st.session_state.itens_cotacao, total)
 
-        # Download
         st.download_button(
             label="⬇️ Baixar Cotação PDF",
             data=pdf_bytes,
@@ -232,4 +229,18 @@ if st.session_state["user"] is None:
 # Menu lateral
 st.sidebar.image("images/logo.png", width=150)
 st.sidebar.write("### Menu")
-menu_options = {"🏠 Início": pagina_inicio, "🧾 Gerar Cotações
+menu_options = {"🏠 Início": pagina_inicio, "🧾 Gerar Cotações": pagina_cotacoes, "🚪 Logout": None}
+opcao_selecionada = st.sidebar.radio("Navegar", list(menu_options.keys()))
+st.session_state["opcao_menu"] = opcao_selecionada
+
+if opcao_selecionada == "🚪 Logout":
+    try:
+        supabase.auth.sign_out()
+        st.session_state["user"] = None
+        st.experimental_rerun()
+    except Exception as e:
+        st.error(f"Erro ao fazer logout: {e}")
+else:
+    func_pagina = menu_options.get(opcao_selecionada)
+    if func_pagina:
+        func_pagina()
