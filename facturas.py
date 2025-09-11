@@ -31,12 +31,12 @@ def autenticar_utilizador():
     password = st.text_input("Password", type="password")
     if st.button("Entrar"):
         user = autenticar(email, password)
-        if user:
-            st.session_state["user"] = user
+        if user and "user" in user:
+            st.session_state["user"] = user["user"]
             st.success("Login bem-sucedido!")
             st.experimental_rerun()
         else:
-            st.error("Falha no login.")
+            st.error("Falha no login. Verifique email e senha.")
 
 # ==========================
 # FUNÇÕES DE DADOS
@@ -60,7 +60,7 @@ def salvar_cotacao_supabase(empresa, itens, total):
             "email_empresa": empresa["email"],
             "itens_cotacao": itens,
             "total_cotacao": total,
-            "user_id": st.session_state["user"].id if "user" in st.session_state else None
+            "user_id": st.session_state["user"]["id"] if "user" in st.session_state else None
         }
         supabase.table("cotacoes").insert(data).execute()
         st.success("Cotação salva com sucesso no Supabase!")
@@ -97,7 +97,6 @@ def gerar_pdf_cotacao(empresa, itens):
     estilo_normal = ParagraphStyle(name="NormalPersonalizado", parent=estilos["Normal"], fontName="Courier", fontSize=10)
     estilo_bold = ParagraphStyle(name="BoldPersonalizado", parent=estilos["Normal"], fontName="Courier-Bold", fontSize=10)
 
-    # Dados da empresa
     elementos.append(Spacer(1,12))
     elementos.append(Paragraph(f"<b>Cotação de Exames Clínicos para</b> {empresa['nome']}", estilo_bold))
     elementos.append(Paragraph(f"NUIT: {empresa['nuit']}", estilo_normal))
@@ -105,19 +104,18 @@ def gerar_pdf_cotacao(empresa, itens):
     elementos.append(Paragraph(f"Email: {empresa['email']}", estilo_normal))
     elementos.append(Spacer(1,12))
 
-    # Tabela de itens
     data = [["Nr", "Descrição", "Qtd", "Preço Unit", "Preço Total", "IVA"]]
     total_sem_iva = 0
-    for idx, item in enumerate(itens, 1):
-        preco_total = item["quantidade"] * item["preco"]
+    for idx, item in enumerate(itens,1):
+        preco_total = item["quantidade"]*item["preco"]
         total_sem_iva += preco_total
         data.append([str(idx), item["nome"], str(item["quantidade"]), f"MZN {item['preco']:.2f}", f"MZN {preco_total:.2f}", "16%"])
-    iva = total_sem_iva * 0.16
-    total_com_iva = total_sem_iva + iva
+    iva = total_sem_iva*0.16
+    total_com_iva = total_sem_iva+iva
 
     tabela_itens = Table(data, colWidths=[30,150,50,80,80,40])
     tabela_itens.setStyle(TableStyle([
-        ("GRID", (0,0), (-1,-1),1,colors.black),
+        ("GRID",(0,0),(-1,-1),1,colors.black),
         ("ALIGN",(0,0),(-1,-1),"CENTER"),
         ("FONTNAME",(0,0),(-1,-1),"Courier"),
         ("FONTSIZE",(0,0),(-1,-1),10)
@@ -137,7 +135,7 @@ def gerar_pdf_cotacao(empresa, itens):
 # ==========================
 def pagina_inicio():
     st.image("images/logo.png", width=150)
-    st.subheader(f"Bem-vindo, {st.session_state['user'].user.email} ao Sistema!")
+    st.subheader(f"Bem-vindo, {st.session_state['user']['email']} ao Sistema!")
     st.write("Use o menu à esquerda para gerir pacientes, agendar consultas e gerar relatórios.")
     st.divider()
     st.markdown("""
@@ -150,7 +148,6 @@ def pagina_cotacoes():
     st.title("📋 Cotações de Exames Clínicos")
     st.subheader("Informações da Empresa Requisitante")
 
-    # Campos empresa
     for campo in ["nome_empresa","nuit_empresa","endereco_empresa","email_empresa"]:
         if campo not in st.session_state: st.session_state[campo] = ""
     st.session_state.nome_empresa = st.text_input("Nome da Empresa:", st.session_state.nome_empresa)
@@ -158,42 +155,38 @@ def pagina_cotacoes():
     st.session_state.endereco_empresa = st.text_input("Endereço da Empresa:", st.session_state.endereco_empresa)
     st.session_state.email_empresa = st.text_input("Email da Empresa:", st.session_state.email_empresa)
 
-    # Itens cotação
-    if "itens_cotacao" not in st.session_state: st.session_state.itens_cotacao = []
-    if "exames_disponiveis" not in st.session_state: st.session_state.exames_disponiveis = carregar_itens()
-    exames_nomes = [e["nome"] for e in st.session_state.exames_disponiveis]
+    if "itens_cotacao" not in st.session_state: st.session_state.itens_cotacao=[]
+    if "exames_disponiveis" not in st.session_state: st.session_state.exames_disponiveis=carregar_itens()
+    exames_nomes=[e["nome"] for e in st.session_state.exames_disponiveis]
 
-    # Formulário adicionar item
     with st.form("add_item_form", clear_on_submit=True):
-        col1,col2 = st.columns([0.7,0.3])
+        col1,col2=st.columns([0.7,0.3])
         exame_selecionado = col1.selectbox("Exame:", exames_nomes)
-        quantidade = col2.number_input("Quantidade:", min_value=1, step=1, value=1)
-        adicionar_item = st.form_submit_button("Adicionar Item à Cotação")
+        quantidade = col2.number_input("Quantidade:",1,100,1)
+        adicionar_item=st.form_submit_button("Adicionar Item à Cotação")
 
     if adicionar_item:
-        item = next((e for e in st.session_state.exames_disponiveis if e["nome"]==exame_selecionado), None)
+        item = next((e for e in st.session_state.exames_disponiveis if e["nome"]==exame_selecionado),None)
         if item:
             st.session_state.itens_cotacao.append({
-                "id": item["id"],
-                "nome": item["nome"],
-                "preco": item["preco"],
-                "quantidade": quantidade
+                "id":item["id"],
+                "nome":item["nome"],
+                "preco":item["preco"],
+                "quantidade":quantidade
             })
             st.success(f"'{item['nome']}' adicionado à cotação!")
 
-    # Exibir itens adicionados
     st.subheader("Itens na Cotação Atual:")
-    total_cotacao = 0
+    total_cotacao=0
     for i,item in enumerate(st.session_state.itens_cotacao,1):
-        subtotal = item["preco"]*item["quantidade"]
-        total_cotacao += subtotal
+        subtotal=item["preco"]*item["quantidade"]
+        total_cotacao+=subtotal
         st.write(f"{i}. {item['quantidade']} x {item['nome']} ({item['preco']:.2f} MZN/un) = {subtotal:.2f} MZN")
     st.markdown(f"**Total da Cotação: {total_cotacao:.2f} MZN**") if st.session_state.itens_cotacao else st.info("Nenhum item adicionado à cotação.")
 
-    # Botão gerar PDF e salvar no Supabase
     if st.button("Gerar PDF e Salvar Cotação"):
-        campos = [st.session_state.nome_empresa, st.session_state.nuit_empresa,
-                  st.session_state.endereco_empresa, st.session_state.email_empresa]
+        campos=[st.session_state.nome_empresa,st.session_state.nuit_empresa,
+                st.session_state.endereco_empresa,st.session_state.email_empresa]
         if any(campo.strip()=="" for campo in campos):
             st.warning("Preencha todos os campos da empresa.")
             return
@@ -201,15 +194,14 @@ def pagina_cotacoes():
             st.warning("Adicione pelo menos um item à cotação.")
             return
 
-        empresa_dados = {
-            "nome": st.session_state.nome_empresa,
-            "nuit": st.session_state.nuit_empresa,
-            "endereco": st.session_state.endereco_empresa,
-            "email": st.session_state.email_empresa
+        empresa_dados={
+            "nome":st.session_state.nome_empresa,
+            "nuit":st.session_state.nuit_empresa,
+            "endereco":st.session_state.endereco_empresa,
+            "email":st.session_state.email_empresa
         }
-
-        pdf_bytes, total = gerar_pdf_cotacao(empresa_dados, st.session_state.itens_cotacao)
-        salvar_cotacao_supabase(empresa_dados, st.session_state.itens_cotacao, total)
+        pdf_bytes,total=gerar_pdf_cotacao(empresa_dados,st.session_state.itens_cotacao)
+        salvar_cotacao_supabase(empresa_dados,st.session_state.itens_cotacao,total)
 
         st.download_button(
             label="⬇️ Baixar Cotação PDF",
@@ -221,26 +213,25 @@ def pagina_cotacoes():
 # ==========================
 # LÓGICA PRINCIPAL
 # ==========================
-if "user" not in st.session_state: st.session_state["user"] = None
+if "user" not in st.session_state: st.session_state["user"]=None
 if st.session_state["user"] is None:
     autenticar_utilizador()
     st.stop()
 
-# Menu lateral
 st.sidebar.image("images/logo.png", width=150)
 st.sidebar.write("### Menu")
-menu_options = {"🏠 Início": pagina_inicio, "🧾 Gerar Cotações": pagina_cotacoes, "🚪 Logout": None}
-opcao_selecionada = st.sidebar.radio("Navegar", list(menu_options.keys()))
-st.session_state["opcao_menu"] = opcao_selecionada
+menu_options={"🏠 Início":pagina_inicio,"🧾 Gerar Cotações":pagina_cotacoes,"🚪 Logout":None}
+opcao_selecionada=st.sidebar.radio("Navegar",list(menu_options.keys()))
+st.session_state["opcao_menu"]=opcao_selecionada
 
-if opcao_selecionada == "🚪 Logout":
+if opcao_selecionada=="🚪 Logout":
     try:
         supabase.auth.sign_out()
-        st.session_state["user"] = None
+        st.session_state["user"]=None
         st.experimental_rerun()
     except Exception as e:
         st.error(f"Erro ao fazer logout: {e}")
 else:
-    func_pagina = menu_options.get(opcao_selecionada)
+    func_pagina=menu_options.get(opcao_selecionada)
     if func_pagina:
         func_pagina()
