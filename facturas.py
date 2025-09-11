@@ -135,7 +135,6 @@ def gerar_pdf_cotacao(empresa, itens):
 # ==========================
 def pagina_inicio():
     st.image("images/logo.png", width=150)
-    st.subheader(f"Bem-vindo, {st.session_state['user']['email']} ao Sistema!")
     st.write("Use o menu à esquerda para gerir pacientes, agendar consultas e gerar relatórios.")
     st.divider()
     st.markdown("""
