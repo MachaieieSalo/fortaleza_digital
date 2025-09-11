@@ -16,11 +16,12 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ==========================
-# AUTENTICAÇÃO
+# FUNÇÕES DE AUTENTICAÇÃO
 # ==========================
 def autenticar(email, password):
     try:
-        return supabase.auth.sign_in_with_password({"email": email, "password": password})
+        response = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        return response
     except Exception as e:
         logging.error(f"Erro ao autenticar: {e}")
         return None
@@ -31,13 +32,12 @@ def autenticar_utilizador():
     password = st.text_input("Password", type="password")
     if st.button("Entrar"):
         user = autenticar(email, password)
-        if user and "user" in user:
-            st.session_state["user"] = user["user"]
+        if user:
+            st.session_state["user"] = user
             st.success("Login bem-sucedido!")
             st.experimental_rerun()
         else:
-            st.error("Falha no login. Verifique email e senha.")
-
+            st.error("Falha no login.")
 # ==========================
 # FUNÇÕES DE DADOS
 # ==========================
