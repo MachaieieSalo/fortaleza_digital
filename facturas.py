@@ -50,7 +50,7 @@ def gerar_pdf_cotacao(empresa, itens):
 
     # Logo
     try:
-        logo_path = "logo.png"
+        logo_path = "images/logo.png"
         imagem_logo = Image(logo_path, width=80, height=80)
         tabela_logo = Table([[imagem_logo]], colWidths=[100], rowHeights=[80])
         tabela_logo.setStyle(TableStyle([
@@ -165,5 +165,6 @@ else:
         )
     else:
         st.warning("Nenhum item encontrado na tabela `itens`.")
+
 
 
