@@ -131,7 +131,7 @@ st.title("Fortaleza Digital")
 
 # Login
 if "user" not in st.session_state:
-    st.subheader("🔑 Login")
+    st.text("Bem Vindo PCA Nelinho Rodrigues")
     email = st.text_input("Email")
     password = st.text_input("Password", type="password")
     if st.button("Entrar"):
@@ -165,4 +165,5 @@ else:
         )
     else:
         st.warning("Nenhum item encontrado na tabela `itens`.")
+
 
