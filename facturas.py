@@ -35,7 +35,7 @@ def autenticar_utilizador():
         if user:
             st.session_state["user"] = user
             st.success("Login bem-sucedido!")
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Falha no login.")
 # ==========================
