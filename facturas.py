@@ -136,27 +136,93 @@ def pagina_inicio():
 def pagina_cotacoes():
     st.title("📋 Cotações de Exames Clínicos")
     st.subheader("Informações da Empresa Requisitante")
-    
-    # Inputs
-    nome_empresa = st.text_input("Nome da Empresa:", key="nome_empresa")
-    nuit_empresa = st.text_input("NUIT da Empresa:", key="nuit_empresa")
-    endereco_empresa = st.text_input("Endereço da Empresa:", key="endereco_empresa")
-    email_empresa = st.text_input("Email da Empresa:", key="email_empresa")
 
-    itens = carregar_itens()
-    if not itens:
-        st.warning("Nenhum item encontrado na tabela `itens`.")
-        return
+    # -----------------------------
+    # Campos da empresa com session_state
+    # -----------------------------
+    if "nome_empresa" not in st.session_state: st.session_state.nome_empresa = ""
+    if "nuit_empresa" not in st.session_state: st.session_state.nuit_empresa = ""
+    if "endereco_empresa" not in st.session_state: st.session_state.endereco_empresa = ""
+    if "email_empresa" not in st.session_state: st.session_state.email_empresa = ""
 
-    empresa_dados = {
-        "nome": nome_empresa,
-        "nuit": nuit_empresa,
-        "endereco": endereco_empresa,
-        "email": email_empresa
-    }
+    st.session_state.nome_empresa = st.text_input("Nome da Empresa:", value=st.session_state.nome_empresa)
+    st.session_state.nuit_empresa = st.text_input("NUIT da Empresa:", value=st.session_state.nuit_empresa)
+    st.session_state.endereco_empresa = st.text_input("Endereço da Empresa:", value=st.session_state.endereco_empresa)
+    st.session_state.email_empresa = st.text_input("Email da Empresa:", value=st.session_state.email_empresa)
 
-    pdf_bytes = gerar_pdf_cotacao(empresa_dados, itens)
-    st.download_button(label="⬇️ Baixar PDF", data=pdf_bytes, file_name="cotacao.pdf", mime="application/pdf")
+    # -----------------------------
+    # Inicializa itens da cotação
+    # -----------------------------
+    if "itens_cotacao" not in st.session_state: st.session_state.itens_cotacao = []
+    if "exames_disponiveis" not in st.session_state: st.session_state.exames_disponiveis = carregar_itens()
+
+    exames_nomes = [e["nome"] for e in st.session_state.exames_disponiveis]
+
+    # -----------------------------
+    # Formulário para adicionar item
+    # -----------------------------
+    with st.form("add_item_form", clear_on_submit=True):
+        col1, col2 = st.columns([0.7, 0.3])
+        exame_selecionado = col1.selectbox("Exame:", exames_nomes)
+        quantidade = col2.number_input("Quantidade:", min_value=1, step=1, value=1)
+        adicionar_item = st.form_submit_button("Adicionar Item à Cotação")
+
+    if adicionar_item:
+        item = next((e for e in st.session_state.exames_disponiveis if e["nome"] == exame_selecionado), None)
+        if item:
+            st.session_state.itens_cotacao.append({
+                "id": item["id"],
+                "nome": item["nome"],
+                "preco": item["preco"],
+                "quantidade": quantidade
+            })
+            st.success(f"'{item['nome']}' adicionado à cotação!")
+
+    # -----------------------------
+    # Exibir itens adicionados
+    # -----------------------------
+    st.subheader("Itens na Cotação Atual:")
+    total_cotacao = 0
+    if st.session_state.itens_cotacao:
+        for i, item in enumerate(st.session_state.itens_cotacao, 1):
+            subtotal = item["preco"] * item["quantidade"]
+            total_cotacao += subtotal
+            st.write(f"{i}. {item['quantidade']} x {item['nome']} ({item['preco']:.2f} MZN/un) = {subtotal:.2f} MZN")
+
+        st.markdown(f"**Total da Cotação: {total_cotacao:.2f} MZN**")
+        if st.button("Limpar Itens da Cotação"):
+            st.session_state.itens_cotacao = []
+    else:
+        st.info("Nenhum item adicionado à cotação.")
+
+    # -----------------------------
+    # Botão gerar PDF
+    # -----------------------------
+    if st.button("Gerar PDF da Cotação"):
+        # Validação campos obrigatórios
+        campos = [st.session_state.nome_empresa, st.session_state.nuit_empresa,
+                  st.session_state.endereco_empresa, st.session_state.email_empresa]
+        if any(campo.strip() == "" for campo in campos):
+            st.warning("Preencha todos os campos da empresa antes de gerar o PDF.")
+            return
+        if not st.session_state.itens_cotacao:
+            st.warning("Adicione pelo menos um item à cotação.")
+            return
+
+        empresa_dados = {
+            "nome": st.session_state.nome_empresa,
+            "nuit": st.session_state.nuit_empresa,
+            "endereco": st.session_state.endereco_empresa,
+            "email": st.session_state.email_empresa
+        }
+
+        pdf_bytes = gerar_pdf_cotacao(empresa_dados, st.session_state.itens_cotacao)
+        st.download_button(
+            label="⬇️ Baixar Cotação PDF",
+            data=pdf_bytes,
+            file_name=f"cotacao_{st.session_state.nome_empresa.replace(' ', '_')}.pdf",
+            mime="application/pdf"
+        )
 
 # ==========================
 # LÓGICA PRINCIPAL
