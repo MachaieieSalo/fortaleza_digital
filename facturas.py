@@ -1,6 +1,7 @@
 import streamlit as st
 import io
 import logging
+import os
 from datetime import datetime
 from supabase import create_client, Client
 from reportlab.lib.pagesizes import A4
@@ -15,6 +16,7 @@ SUPABASE_URL = "https://qdjcokczpvfkqbpaezhn.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkamNva2N6cHZma3FicGFlemhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MDg2NDIsImV4cCI6MjA3MzE4NDY0Mn0.HC2M4bEfhT4xa7CIvc27Us8rHMp1T3k634gR7GBQuMg"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+
 # ==========================
 # FUNÇÕES DE AUTENTICAÇÃO
 # ==========================
@@ -26,35 +28,32 @@ def autenticar(email, password):
         logging.error(f"Erro ao autenticar: {e}")
         return None
 
+
 def autenticar_utilizador():
-    st.text("Bem-vindo PCA Nelinho Rodrigues")
+    st.title("🔐 Autenticação")
     email = st.text_input("Email")
     password = st.text_input("Password", type="password")
     if st.button("Entrar"):
         user = autenticar(email, password)
-        if user:
+        if user and getattr(user, "user", None):
             st.session_state["user"] = user
-            st.success("Login bem-sucedido!")
+            st.success(f"Bem-vindo, {user.user.email}!")
             st.rerun()
         else:
-            st.error("Falha no login.")
+            st.error("Falha no login. Verifique suas credenciais.")
+
+
 # ==========================
 # FUNÇÕES DE DADOS
 # ==========================
 def carregar_itens():
     try:
-        # Buscar dados da tabela 'itens' no Supabase
         response = supabase.table("itens").select("id, nome, preco").execute()
-
         if response.data and len(response.data) > 0:
             return response.data
-
-        # Caso a tabela esteja vazia
         st.warning("⚠️ Nenhum item encontrado na tabela 'itens'.")
         return []
-
     except Exception as e:
-        # Se der erro na ligação ao Supabase, usamos mock para testes
         st.error(f"Erro ao carregar itens da base de dados: {e}")
         st.info("A carregar itens de exemplo para teste...")
         return [
@@ -62,6 +61,7 @@ def carregar_itens():
             {"id": 2, "nome": "Raio-X", "preco": 1500},
             {"id": 3, "nome": "Ecografia", "preco": 2000},
         ]
+
 
 def salvar_cotacao_supabase(empresa, itens, total):
     try:
@@ -73,13 +73,14 @@ def salvar_cotacao_supabase(empresa, itens, total):
             "email_empresa": empresa["email"],
             "itens_cotacao": itens,
             "total_cotacao": total,
-            "user_id": st.session_state["user"]["id"] if "user" in st.session_state else None
+            "user_id": getattr(st.session_state["user"].user, "id", None)
         }
         supabase.table("cotacoes").insert(data).execute()
-        st.success("Cotação salva com sucesso no Supabase!")
+        st.success("✅ Cotação salva com sucesso no Supabase!")
     except Exception as e:
         logging.error(f"Erro ao salvar cotação no Supabase: {e}")
-        st.error("Erro ao salvar cotação na base de dados.")
+        st.error("❌ Erro ao salvar cotação na base de dados.")
+
 
 # ==========================
 # GERAR PDF
@@ -90,51 +91,51 @@ def gerar_pdf_cotacao(empresa, itens):
     elementos = []
 
     # Logo
-    try:
-        logo_path = "images/logo.png"
+    logo_path = "images/logo.png"
+    if os.path.exists(logo_path):
         imagem_logo = Image(logo_path, width=80, height=80)
-        tabela_logo = Table([[imagem_logo]], colWidths=[100], rowHeights=[80])
-        tabela_logo.setStyle(TableStyle([
-            ("ALIGN", (0,0), (-1,-1), "LEFT"),
-            ("VALIGN", (0,0), (-1,-1), "TOP"),
-            ("LEFTPADDING", (0,0), (-1,-1), 0),
-            ("RIGHTPADDING", (0,0), (-1,-1), 0),
-            ("TOPPADDING", (0,0), (-1,-1), 0),
-            ("BOTTOMPADDING", (0,0), (-1,-1), 0),
-        ]))
-        elementos.append(tabela_logo)
-    except:
-        logging.warning("Logo não encontrado.")
+        elementos.append(imagem_logo)
+    else:
+        st.warning("⚠️ Logo não encontrada no diretório 'images/'.")
 
     estilos = getSampleStyleSheet()
     estilo_normal = ParagraphStyle(name="NormalPersonalizado", parent=estilos["Normal"], fontName="Courier", fontSize=10)
     estilo_bold = ParagraphStyle(name="BoldPersonalizado", parent=estilos["Normal"], fontName="Courier-Bold", fontSize=10)
 
-    elementos.append(Spacer(1,12))
+    elementos.append(Spacer(1, 12))
     elementos.append(Paragraph(f"<b>Cotação de Exames Clínicos para</b> {empresa['nome']}", estilo_bold))
     elementos.append(Paragraph(f"NUIT: {empresa['nuit']}", estilo_normal))
     elementos.append(Paragraph(f"Endereço: {empresa['endereco']}", estilo_normal))
     elementos.append(Paragraph(f"Email: {empresa['email']}", estilo_normal))
-    elementos.append(Spacer(1,12))
+    elementos.append(Spacer(1, 12))
 
+    # Tabela de itens
     data = [["Nr", "Descrição", "Qtd", "Preço Unit", "Preço Total", "IVA"]]
     total_sem_iva = 0
-    for idx, item in enumerate(itens,1):
-        preco_total = item["quantidade"]*item["preco"]
+    for idx, item in enumerate(itens, 1):
+        preco_total = item["quantidade"] * item["preco"]
         total_sem_iva += preco_total
-        data.append([str(idx), item["nome"], str(item["quantidade"]), f"MZN {item['preco']:.2f}", f"MZN {preco_total:.2f}", "16%"])
-    iva = total_sem_iva*0.16
-    total_com_iva = total_sem_iva+iva
+        data.append([
+            str(idx),
+            item["nome"],
+            str(item["quantidade"]),
+            f"MZN {item['preco']:.2f}",
+            f"MZN {preco_total:.2f}",
+            "16%"
+        ])
+    iva = total_sem_iva * 0.16
+    total_com_iva = total_sem_iva + iva
 
-    tabela_itens = Table(data, colWidths=[30,150,50,80,80,40])
+    tabela_itens = Table(data, colWidths=[30, 150, 50, 80, 80, 40])
     tabela_itens.setStyle(TableStyle([
-        ("GRID",(0,0),(-1,-1),1,colors.black),
-        ("ALIGN",(0,0),(-1,-1),"CENTER"),
-        ("FONTNAME",(0,0),(-1,-1),"Courier"),
-        ("FONTSIZE",(0,0),(-1,-1),10)
+        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+        ("ALIGN", (0, 0), (-1, 0), "CENTER"),  # Cabeçalho
+        ("ALIGN", (2, 1), (-1, -1), "RIGHT"),  # Qtd, preços e totais
+        ("FONTNAME", (0, 0), (-1, -1), "Courier"),
+        ("FONTSIZE", (0, 0), (-1, -1), 10)
     ]))
     elementos.append(tabela_itens)
-    elementos.append(Spacer(1,12))
+    elementos.append(Spacer(1, 12))
     elementos.append(Paragraph(f"Subtotal (sem IVA): MZN {total_sem_iva:.2f}", estilo_bold))
     elementos.append(Paragraph(f"IVA (16%): MZN {iva:.2f}", estilo_bold))
     elementos.append(Paragraph(f"Total Geral: MZN {total_com_iva:.2f}", estilo_bold))
@@ -142,6 +143,7 @@ def gerar_pdf_cotacao(empresa, itens):
     doc.build(elementos)
     buffer.seek(0)
     return buffer.getvalue(), total_com_iva
+
 
 # ==========================
 # PÁGINAS
@@ -153,8 +155,9 @@ def pagina_inicio():
     st.markdown("""
     © 2025 Fortaleza Digital  | Todos os direitos reservados.  
     Versão: 1.0  
-    Desenvolvedor: Salomão Paulino Machaieie
+    Desenvolvedor: **Salomão Paulino Machaieie**
     """)
+
 
 def pagina_cotacoes():
     st.title("📋 Cotações de Exames Clínicos")
@@ -214,10 +217,10 @@ def pagina_cotacoes():
         campos = [st.session_state.nome_empresa, st.session_state.nuit_empresa,
                   st.session_state.endereco_empresa, st.session_state.email_empresa]
         if any(campo.strip() == "" for campo in campos):
-            st.warning("Preencha todos os campos da empresa.")
+            st.warning("⚠️ Preencha todos os campos da empresa.")
             return
         if not st.session_state.itens_cotacao:
-            st.warning("Adicione pelo menos um item à cotação.")
+            st.warning("⚠️ Adicione pelo menos um item à cotação.")
             return
 
         empresa_dados = {
@@ -237,28 +240,31 @@ def pagina_cotacoes():
             mime="application/pdf"
         )
 
+
 # ==========================
 # LÓGICA PRINCIPAL
 # ==========================
-if "user" not in st.session_state: st.session_state["user"]=None
+if "user" not in st.session_state:
+    st.session_state["user"] = None
+
 if st.session_state["user"] is None:
     autenticar_utilizador()
     st.stop()
 
 st.sidebar.image("images/logo.png", width=150)
 st.sidebar.write("### Menu")
-menu_options={"🏠 Início":pagina_inicio,"🧾 Gerar Cotações":pagina_cotacoes,"🚪 Logout":None}
-opcao_selecionada=st.sidebar.radio("Navegar",list(menu_options.keys()))
-st.session_state["opcao_menu"]=opcao_selecionada
+menu_options = {"🏠 Início": pagina_inicio, "🧾 Gerar Cotações": pagina_cotacoes, "🚪 Logout": None}
+opcao_selecionada = st.sidebar.radio("Navegar", list(menu_options.keys()))
+st.session_state["opcao_menu"] = opcao_selecionada
 
-if opcao_selecionada=="🚪 Logout":
+if opcao_selecionada == "🚪 Logout":
     try:
         supabase.auth.sign_out()
-        st.session_state["user"]=None
-        st.experimental_rerun()
+        st.session_state["user"] = None
+        st.rerun()
     except Exception as e:
         st.error(f"Erro ao fazer logout: {e}")
 else:
-    func_pagina=menu_options.get(opcao_selecionada)
+    func_pagina = menu_options.get(opcao_selecionada)
     if func_pagina:
         func_pagina()
