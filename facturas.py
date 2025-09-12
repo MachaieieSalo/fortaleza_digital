@@ -30,7 +30,7 @@ def autenticar(email, password):
 
 
 def autenticar_utilizador():
-    st.title("🔐 Autenticação")
+    st.title("Fortaleza Digital, EI| Autenticação")
     email = st.text_input("Email")
     password = st.text_input("Password", type="password")
     if st.button("Entrar"):
