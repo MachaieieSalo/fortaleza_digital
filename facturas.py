@@ -92,19 +92,11 @@ def gerar_pdf_cotacao(empresa, itens):
 
     # Logo
     logo_path = "images/logo.png"
+    if os.path.exists(logo_path):
         imagem_logo = Image(logo_path, width=80, height=80)
-        tabela_logo = Table([[imagem_logo]], colWidths=[100], rowHeights=[80])
-        tabela_logo.setStyle(TableStyle([
-            ("ALIGN", (0,0), (-1,-1), "LEFT"),
-            ("VALIGN", (0,0), (-1,-1), "TOP"),
-            ("LEFTPADDING", (0,0), (-1,-1), 0),
-            ("RIGHTPADDING", (0,0), (-1,-1), 0),
-            ("TOPPADDING", (0,0), (-1,-1), 0),
-            ("BOTTOMPADDING", (0,0), (-1,-1), 0),
-        ]))
-        elementos.append(tabela_logo)
-    except Exception:
-        logging.warning("Logo não encontrado.")
+        elementos.append(imagem_logo)
+    else:
+        st.warning("⚠️ Logo não encontrada no diretório 'images/'.")
 
     estilos = getSampleStyleSheet()
     estilo_normal = ParagraphStyle(name="NormalPersonalizado", parent=estilos["Normal"], fontName="Courier", fontSize=10)
