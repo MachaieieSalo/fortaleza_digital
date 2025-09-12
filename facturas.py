@@ -92,18 +92,34 @@ def gerar_pdf_cotacao(empresa, itens):
 
     # Logo
     logo_path = "images/logo.png"
-    if os.path.exists(logo_path):
         imagem_logo = Image(logo_path, width=80, height=80)
-        elementos.append(imagem_logo)
-    else:
-        st.warning("⚠️ Logo não encontrada no diretório 'images/'.")
+        tabela_logo = Table([[imagem_logo]], colWidths=[100], rowHeights=[80])
+        tabela_logo.setStyle(TableStyle([
+            ("ALIGN", (0,0), (-1,-1), "LEFT"),
+            ("VALIGN", (0,0), (-1,-1), "TOP"),
+            ("LEFTPADDING", (0,0), (-1,-1), 0),
+            ("RIGHTPADDING", (0,0), (-1,-1), 0),
+            ("TOPPADDING", (0,0), (-1,-1), 0),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 0),
+        ]))
+        elementos.append(tabela_logo)
+    except Exception:
+        logging.warning("Logo não encontrado.")
 
     estilos = getSampleStyleSheet()
     estilo_normal = ParagraphStyle(name="NormalPersonalizado", parent=estilos["Normal"], fontName="Courier", fontSize=10)
     estilo_bold = ParagraphStyle(name="BoldPersonalizado", parent=estilos["Normal"], fontName="Courier-Bold", fontSize=10)
 
+    # Dados da empresa 
     elementos.append(Spacer(1, 12))
-    elementos.append(Paragraph(f"<b>Cotação de Exames Clínicos para</b> {empresa['nome']}", estilo_bold))
+    elementos.append(Paragraph("Fortaleza Digital. EI", estilo_normal))
+    elementos.append(Paragraph("Matola, Intaka, Rua do Mulawuze Q .Nº1, C. Nº 7", estilo_normal))
+    elementos.append(Paragraph("NUIT: 401937684", estilo_normal))
+    elementos.append(Paragraph("Contacto: +258 87 741 0943", estilo_normal))
+    elementos.append(Spacer(1, 12))
+
+    elementos.append(Spacer(1, 12))
+    elementos.append(Paragraph(f"<b>Cotação para prestação de serviços para</b> {empresa['nome']}", estilo_bold))
     elementos.append(Paragraph(f"NUIT: {empresa['nuit']}", estilo_normal))
     elementos.append(Paragraph(f"Endereço: {empresa['endereco']}", estilo_normal))
     elementos.append(Paragraph(f"Email: {empresa['email']}", estilo_normal))
@@ -140,6 +156,12 @@ def gerar_pdf_cotacao(empresa, itens):
     elementos.append(Paragraph(f"IVA (16%): MZN {iva:.2f}", estilo_bold))
     elementos.append(Paragraph(f"Total Geral: MZN {total_com_iva:.2f}", estilo_bold))
 
+    elementos.append(Paragraph("Esta cotação tem a validade de 05 dias.", estilo_normal))
+    elementos.append(Spacer(1, 12))
+    # Dados bancários 
+    elementos.append(Paragraph("<b>DADOS BANCÁRIOS</b>", estilo_bold))
+    elementos.append(Paragraph("EMOLA - Conta: 87 741 0943 - Nelinho Rodrigues", estilo_normal))
+
     doc.build(elementos)
     buffer.seek(0)
     return buffer.getvalue(), total_com_iva
@@ -160,7 +182,7 @@ def pagina_inicio():
 
 
 def pagina_cotacoes():
-    st.title("📋 Cotações de Exames Clínicos")
+    st.title("Cotação para prestação de serviços")
     st.subheader("Informações da Empresa Requisitante")
 
     # Campos da empresa
