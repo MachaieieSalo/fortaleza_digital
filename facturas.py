@@ -111,7 +111,7 @@ def gerar_pdf_cotacao(empresa, itens):
     elementos.append(Spacer(1, 12))
 
     elementos.append(Spacer(1, 12))
-    elementos.append(Paragraph(f"<b>Cotação para prestação de serviços para</b> {empresa['nome']}", estilo_bold))
+    elementos.append(Paragraph(f"<b>Cotação para </b> {empresa['nome']}", estilo_bold))
     elementos.append(Paragraph(f"NUIT: {empresa['nuit']}", estilo_normal))
     elementos.append(Paragraph(f"Endereço: {empresa['endereco']}", estilo_normal))
     elementos.append(Paragraph(f"Email: {empresa['email']}", estilo_normal))
