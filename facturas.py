@@ -164,7 +164,7 @@ def gerar_pdf_cotacao(empresa, itens):
 # ==========================
 def pagina_inicio():
     st.image("images/logo.png", width=150)
-    st.write("Use o menu à esquerda para gerir pacientes, agendar consultas e gerar relatórios.")
+    st.write("Bem vindo Sr. Nelinho Rodrigues, use o menu à esquerda para gerar cotação")
     st.divider()
     st.markdown("""
     © 2025 Fortaleza Digital  | Todos os direitos reservados.  
